@@ -1,0 +1,16 @@
+
+# Data
+data/
+data/filtered_complaints.csv
+vector_store/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.env
+.venv
+env/
+venv/
+.ipynb_checkpoints/

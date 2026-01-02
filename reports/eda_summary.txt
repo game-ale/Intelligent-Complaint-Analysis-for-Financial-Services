@@ -1,0 +1,19 @@
+Original Count: 9609797
+Filtered (Product & Narrative) Count: 330008
+
+Distribution by Product:
+Category
+Credit Card        189334
+Money Transfer      98685
+Savings Account     24751
+Personal Loan       17238
+
+Word Count Stats:
+count    330008.000000
+mean        195.668947
+std         216.539601
+min           0.000000
+25%          84.000000
+50%         128.000000
+75%         241.000000
+max        6263.000000
