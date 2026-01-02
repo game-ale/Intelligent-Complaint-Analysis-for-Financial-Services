@@ -22,16 +22,23 @@ The system follows a standard RAG pipeline:
     -   **Gradio Web App**: A user-friendly chat interface displaying both the AI answer and the cited source documents.
 
 ## System Evaluation
-We performed a qualitative evaluation on a set of diverse questions.
+We performed a robust evaluation on 8 representative questions using the enhanced evaluation module (`src/evaluate_rag.py`).
 
-| Question | Latency (s) | Quality Assessment |
-| :--- | :--- | :--- |
-| Common complaints about credit card fees? | ~3.25s | **Good**: Correctly identified issues but cautious due to context limits. |
-| Issues with money transfers? | ~34.55s | **Excellent**: Retrieved specific detailed narratives about fees and difficulties. |
-| Issues with personal loans? | ~10.38s | **Good**: Cited specific company practices (e.g., Synchrony Bank). |
-| Billing dispute description? | ~9.78s | **Fair**: Retrieved company names but answer was brief. |
+| Question | Latency (s) | 
+| :--- | :--- |
+| Common complaints about credit card fees? | ~3.33s |
+| Issues with money transfers? | ~7.23s |
+| Issues with personal loans? | ~3.88s |
+| ... | ... |
 
-*Full evaluation logs are available in `reports/rag_evaluation.md`.*
+*Full detailed evaluation logs, including retrieved context IDs and manual relevance ratings, are available in [`reports/rag_evaluation_enhanced.md`](reports/rag_evaluation_enhanced.md).*
+
+## Code Quality Improvements
+Based on feedback, we implemented:
+-   **Configuration Management**: Centralized `src/config.py`.
+-   **Robustness**: Lazy loading of heavy models and try-except blocks in `src/rag_pipeline.py`.
+-   **Type Safety**: Added type hints and docstrings.
+-   **Extensibility**: Modular evaluation script.
 
 ## UI Showcase
 The application provides a clean chat interface.
