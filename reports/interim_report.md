@@ -20,7 +20,25 @@ The goal was to filter the massive CFPB complaint dataset to focus on 4 key fina
     -   Average complaint length is ~196 words.
     -   The distribution is right-skewed, with some complaints exceeding 6000 words. This confirms the need for **chunking** in Task 2 to fit within the embedding model's context window.
 
+### Visualizations
+![Product Distribution](product_distribution.png)
+*Figure 1: Distribution of complaints across the four target product categories.*
+
+![Word Count Distribution](word_count_distribution.png)
+*Figure 2: Distribution of narrative lengths (truncated at 1000 words for visibility).*
+
 ## Task 2: Text Chunking, Embedding, and Vector Store Indexing
+
+### Architecture
+The following diagram illustrates the pipeline implemented in Task 2:
+
+```mermaid
+graph LR
+    A[Processed CSV] -->|Stratified Sample| B(Sampled Data)
+    B -->|Recursive Chunking| C(Text Chunks)
+    C -->|all-MiniLM-L6-v2| D(Embeddings)
+    D -->|Persist| E[(ChromaDB Vector Store)]
+```
 
 ### Chunking and Embedding Strategy
 -   **Sampling**: A stratified sample of **10,000 complaints** was created to ensure balanced representation across the 4 categories relative to their original distribution.
@@ -33,8 +51,24 @@ The goal was to filter the massive CFPB complaint dataset to focus on 4 key fina
 -   **Vector Store**: **ChromaDB** was used to persist the embeddings locally.
 
 ### Key Results
--   Successfully indexed ~10,000 documents (yielding ~20k-40k chunks depending on length).
+-   Successfully indexed **27,143 chunks** (from 10,000 documents).
 -   **Verification**: A test query "credit card late fee" successfully retrieved relevant complaint narratives from the vector store, confirming the pipeline's functionality.
+
+### Verification Evidence (Terminal Output)
+```text
+Loading Vector Store from vector_store...
+Total documents in store: 27143
+
+Test Query: 'credit card late fee'
+
+Result 1:
+Content: i was charged a late fee plus interest for a previous balance that was paid off in full by the due date...
+Metadata: {'Category': 'Credit Card', 'Product': 'Credit card'}
+
+Result 2:
+Content: i paid my credit card bill on xx/xx/2024. i was charged a late fee of $35.00...
+Metadata: {'Category': 'Credit Card', 'Product': 'Credit card'}
+```
 
 ### Next Steps
 -   Proceed to Task 3: Building the RAG Pipeline (Retriever + Generator).
