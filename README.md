@@ -25,8 +25,19 @@ rag-complaint-chatbot/
 - [x] **Task 1: EDA & Preprocessing**: Data filtered and cleaned. See [Interim Report](reports/interim_report.md).
 - [x] **Task 2: Vector Store**: Chunking and Indexing.
 - [x] **Task 3: RAG Core**: Retrieval and Generation logic. See [Evaluation Report](reports/rag_evaluation.md).
-- [ ] **Task 4: UI**: Gradio application.
+- [x] **Task 4: UI**: Gradio application.
 
-## Setup
-1.  Install dependencies: `pip install -r requirements.txt`
-2.  Run data processing: `python src/process_data.py`
+## Setup & Usage
+1.  **Install dependencies**: 
+    ```bash
+    pip install -r requirements.txt
+    ```
+2.  **Run the UI**:
+    ```bash
+    python app.py
+    ```
+3.  **Access**: Open the URL shown in the terminal (usually `http://127.0.0.1:7860`).
+
+## Reports
+-   [Interim Report (Tasks 1-2)](reports/interim_report.md)
+-   [Final Report (Tasks 1-4)](reports/final_report.md)
