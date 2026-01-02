@@ -1,93 +1,161 @@
 
-import os
+import logging
+from typing import Optional, List, Dict, Any
 from langchain_chroma import Chroma
-from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_huggingface import HuggingFacePipeline
+from langchain_huggingface import HuggingFaceEmbeddings, HuggingFacePipeline
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, pipeline
 from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
+from langchain_core.documents import Document
+import src.config as cfg
 
-# Configuration
-VECTOR_STORE_PATH = 'vector_store'
-EMBEDDING_MODEL = 'sentence-transformers/all-MiniLM-L6-v2'
-LLM_MODEL = 'google/flan-t5-base' # CPU friendly, good instruction following
+# Configure Logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 class ComplaintRAG:
-    def __init__(self):
-        print("Initializing RAG Pipeline...")
-        
-        # 1. Load Vector Store (Retriever)
-        print("Loading Vector Store...")
-        self.embedding_fn = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
-        self.vector_store = Chroma(
-            persist_directory=VECTOR_STORE_PATH,
-            embedding_function=self.embedding_fn
-        )
-        self.retriever = self.vector_store.as_retriever(
-            search_type="similarity",
-            search_kwargs={"k": 5}
-        )
-        
-        # 2. Load LLM (Generator)
-        print(f"Loading LLM ({LLM_MODEL})...")
-        tokenizer = AutoTokenizer.from_pretrained(LLM_MODEL)
-        model = AutoModelForSeq2SeqLM.from_pretrained(LLM_MODEL)
-        
-        pipe = pipeline(
-            "text2text-generation",
-            model=model,
-            tokenizer=tokenizer,
-            max_length=512,
-            truncation=True,
-            temperature=0.3 # Low temp for factual answers
-        )
-        
-        self.llm = HuggingFacePipeline(pipeline=pipe)
-        
-        # 3. Define Prompt
-        # Flan-T5 needs clear instructions.
-        template = """
-        You are a helpful financial analyst assistant for CrediTrust. 
-        Answer the question based ONLY on the following context. 
-        If the answer is not in the context, say "I don't have enough information."
-        
-        Context:
-        {context}
-        
-        Question: 
-        {question}
-        
-        Answer:
+    """
+    Retrieval-Augmented Generation (RAG) pipeline for analyzing customer complaints.
+    
+    Attributes:
+        vector_store_path (str): Path to the ChromaDB vector store.
+        embedding_model (str): Name of the HuggingFace embedding model.
+        llm_model (str): Name of the HuggingFace LLM model.
+    """
+    
+    def __init__(self, 
+                 vector_store_path: str = str(cfg.VECTOR_STORE_PATH),
+                 embedding_model: str = cfg.EMBEDDING_MODEL_NAME,
+                 llm_model: str = cfg.LLM_MODEL_NAME):
         """
+        Initializes the RAG pipeline components.
         
-        self.prompt = PromptTemplate.from_template(template)
+        Args:
+            vector_store_path (str): Path to persistent vector store.
+            embedding_model (str): HF model identifier for embeddings.
+            llm_model (str): HF model identifier for generation.
+        """
+        self.vector_store_path = vector_store_path
+        self.embedding_model_name = embedding_model
+        self.llm_model_name = llm_model
         
-        # 4. Build Chain
-        self.chain = (
-            {"context": self.retriever | self._format_docs, "question": RunnablePassthrough()}
-            | self.prompt
-            | self.llm
-            | StrOutputParser()
-        )
-        print("RAG Pipeline Initialized.")
+        # Lazy loading components
+        self._vector_store = None
+        self._retriever = None
+        self._llm = None
+        self._chain = None
 
-    def _format_docs(self, docs):
+    def _load_retriever(self):
+        """Loads and configures the ChromaDB retriever."""
+        if not self._retriever:
+            try:
+                logger.info(f"Loading embedding model: {self.embedding_model_name}")
+                embedding_fn = HuggingFaceEmbeddings(model_name=self.embedding_model_name)
+                
+                logger.info(f"Loading vector store from: {self.vector_store_path}")
+                self._vector_store = Chroma(
+                    persist_directory=self.vector_store_path,
+                    embedding_function=embedding_fn
+                )
+                self._retriever = self._vector_store.as_retriever(
+                    search_type="similarity",
+                    search_kwargs={"k": cfg.RETRIEVER_K}
+                )
+            except Exception as e:
+                logger.error(f"Failed to load retriever: {e}")
+                raise RuntimeError("Critical Error: Could not load Vector Store.") from e
+        return self._retriever
+
+    def _load_llm(self):
+        """Loads the LLM pipeline."""
+        if not self._llm:
+            try:
+                logger.info(f"Loading LLM model: {self.llm_model_name}")
+                tokenizer = AutoTokenizer.from_pretrained(self.llm_model_name)
+                model = AutoModelForSeq2SeqLM.from_pretrained(self.llm_model_name)
+                
+                pipe = pipeline(
+                    "text2text-generation",
+                    model=model,
+                    tokenizer=tokenizer,
+                    max_length=cfg.GENERATION_MAX_LENGTH,
+                    truncation=True,
+                    temperature=cfg.GENERATION_TEMP
+                )
+                self._llm = HuggingFacePipeline(pipeline=pipe)
+            except Exception as e:
+                logger.error(f"Failed to load LLM: {e}")
+                raise RuntimeError("Critical Error: Could not load LLM.") from e
+        return self._llm
+
+    def get_chain(self):
+        """Constructs and returns the RAG execution chain."""
+        if not self._chain:
+            retriever = self._load_retriever()
+            llm = self._load_llm()
+            
+            template = """
+            You are a helpful financial analyst assistant for CrediTrust. 
+            Answer the question based ONLY on the following context. 
+            If the answer is not in the context, say "I don't have enough information."
+            
+            Context:
+            {context}
+            
+            Question: 
+            {question}
+            
+            Answer:
+            """
+            prompt = PromptTemplate.from_template(template)
+            
+            self._chain = (
+                {"context": retriever | self._format_docs, "question": RunnablePassthrough()}
+                | prompt
+                | llm
+                | StrOutputParser()
+            )
+            logger.info("RAG Chain initialized successfully.")
+        return self._chain
+
+    def _format_docs(self, docs: List[Document]) -> str:
+        """Formats retrieved documents into a single context string."""
         return "\n\n".join([d.page_content for d in docs])
 
-    def query(self, question):
-        print(f"Querying: {question}")
-        response = self.chain.invoke(question)
-        return response
-    
-    def retrieve_only(self, question):
-        """Helper to inspect retrieved docs"""
-        return self.retriever.invoke(question)
+    def query(self, question: str) -> str:
+        """
+        Executes a query against the RAG pipeline.
+        
+        Args:
+            question (str): User's question.
+            
+        Returns:
+            str: Generated answer.
+        """
+        chain = self.get_chain()
+        logger.info(f"Processing query: {question}")
+        try:
+            return chain.invoke(question)
+        except Exception as e:
+            logger.error(f"Query execution failed: {e}")
+            return "Error: Unable to generate response."
+
+    def retrieve_only(self, question: str) -> List[Document]:
+        """
+        Retrieves relevant documents without generation.
+        
+        Args:
+            question (str): Query string.
+            
+        Returns:
+            List[Document]: List of retrieved documents.
+        """
+        retriever = self._load_retriever()
+        return retriever.invoke(question)
 
 if __name__ == "__main__":
-    # Simple test
+    # Test block
     rag = ComplaintRAG()
-    q = "What are the common complaints about credit card fees?"
-    result = rag.query(q)
-    print("\nFINAL ANSWER:")
-    print(result)
+    res = rag.query("What are the credit card fees?")
+    print(res)
