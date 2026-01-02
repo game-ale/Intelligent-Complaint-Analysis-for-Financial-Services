@@ -4,6 +4,9 @@ scikit-learn
 chromadb
 langchain
 langchain-community
+langchain-huggingface
+langchain-chroma
+langchain-text-splitters
 sentence-transformers
 gradio
 torch
@@ -11,3 +14,11 @@ openai
 tiktoken
 tqdm
 jupyter
+transformers
+accelerate
+bitsandbytes
+tabulate
+matplotlib
+seaborn
+pytest
+flake8
