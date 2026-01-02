@@ -1,1 +1,32 @@
-Read me 
+# Intelligent Complaint Analysis - RAG Chatbot
+
+## Overview
+CrediTrust Financial is building an AI-powered internal tool to analyze customer complaints. This project implements a **Retrieval-Augmented Generation (RAG)** chatbot that allows stakeholders to ask natural language questions about customer feedback across Credit Cards, Loans, Savings, and Money Transfers.
+
+## Key Features
+-   **Multi-Product Support**: Handles complaints from 4 major financial categories.
+-   **Semantic Search**: Uses vector embeddings to find relevant narratives.
+-   **Generative Answers**: Synthesizes insights using an LLM.
+-   **Interactive UI**: Simple chat interface for non-technical users.
+
+## Project Structure
+```
+rag-complaint-chatbot/
+├── data/               # Raw and processed datasets (gitignored)
+├── vector_store/       # ChromaDB/FAISS index (gitignored)
+├── notebooks/          # Analysis and experiments
+├── reports/            # Project reports and summaries
+├── src/                # Source code for pipeline
+├── app.py              # Main application entry point
+└── requirements.txt    # Project dependencies
+```
+
+## Progress
+- [x] **Task 1: EDA & Preprocessing**: Data filtered and cleaned. See [Interim Report](reports/interim_report.md).
+- [ ] **Task 2: Vector Store**: Chunking and Indexing.
+- [ ] **Task 3: RAG Core**: Retrieval and Generation logic.
+- [ ] **Task 4: UI**: Gradio application.
+
+## Setup
+1.  Install dependencies: `pip install -r requirements.txt`
+2.  Run data processing: `python src/process_data.py`
