@@ -1,0 +1,13 @@
+pandas
+numpy
+scikit-learn
+chromadb
+langchain
+langchain-community
+sentence-transformers
+gradio
+torch
+openai
+tiktoken
+tqdm
+jupyter
