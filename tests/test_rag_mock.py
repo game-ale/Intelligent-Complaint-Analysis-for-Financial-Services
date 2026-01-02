@@ -24,17 +24,17 @@ class TestRAGPipeline(unittest.TestCase):
         # Mock the chain invocation
         rag = ComplaintRAG()
         
-        # Mock the chain to return a string directly
-        # Since self.chain is constructed using pipe syntax, it's a RunnableBinding. 
-        # We can mock the invoke method on the chain object if we can access it, 
-        # or implies that rag.chain.invoke returns "Mock Answer"
-        rag.chain = MagicMock()
-        rag.chain.invoke.return_value = "Mocked RAG Answer"
+        # Mock the chain creation/retrieval
+        mock_chain = MagicMock()
+        mock_chain.invoke.return_value = "Mocked RAG Answer"
+        
+        # Override get_chain to return our mock
+        rag.get_chain = MagicMock(return_value=mock_chain)
         
         # Test Query
         response = rag.query("Test Question")
         self.assertEqual(response, "Mocked RAG Answer")
-        rag.chain.invoke.assert_called_with("Test Question")
+        mock_chain.invoke.assert_called_with("Test Question")
 
 if __name__ == '__main__':
     unittest.main()
