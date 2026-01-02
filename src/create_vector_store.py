@@ -1,10 +1,11 @@
 
 import pandas as pd
+import numpy as np
 import os
 from langchain_community.document_loaders import DataFrameLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_community.vectorstores import Chroma
+from langchain_chroma import Chroma
 import shutil
 
 # Configurations
@@ -27,34 +28,28 @@ def main():
 
     # 2. Stratified Sampling
     print(f"performing stratified sampling (n={SAMPLE_SIZE})...")
-    # Calculate proportion of each category
-    # usage of groupby and apply to sample valid amount
     try:
-        # We want to sample SAMPLE_SIZE total
-        # We can use train_test_split with stratify, or just pandas sample
-        # Pandas sample doesn't strictly support "stratified n" easily in one shot without weights or loops
-        # But we can do:
-        df_sample = df.groupby('Category', group_keys=False).apply(
-            lambda x: x.sample(int(np.rint(SAMPLE_SIZE * len(x) / len(df))))
-        )
-        
-        # If rounding caused issues, just take head or random sample
-        if len(df_sample) > SAMPLE_SIZE:
-             df_sample = df_sample.sample(SAMPLE_SIZE)
-        
-        # Fallback if manual calculation strictly required, but this is usually fine.
-        # Let's simple use sklearn for robustness
         from sklearn.model_selection import train_test_split
-        # This gives us a test set of size X, but we want a specific size. 
-        # Easier to specific frac. 
+        # Calculate fraction for sampling
         frac = SAMPLE_SIZE / len(df)
-        _, df_sample = train_test_split(df, test_size=frac, stratify=df['Category'], random_state=42)
+        if frac > 1.0:
+            frac = 1.0
         
-    except ImportError:
-        import numpy as np
-        # Fallback manual
-        print("sklearn not found, using pandas manual stratification")
-        df_sample = df.groupby('Category', group_keys=False).apply(lambda x: x.sample(frac=SAMPLE_SIZE/len(df)))
+        # We use train_test_split to get a stratified subset
+        # train_test_split returns (train, test). We can treat the 'test' as our sample if size is small,
+        # or 'train' if large. Here we want `frac` size. 
+        # Actually StratifiedShuffleSplit or just train_test_split(test_size=frac)
+        # If we want exactly X items, we can use test_size=int(SAMPLE_SIZE) (if <= len) or train_size...
+        
+        _, df_sample = train_test_split(
+            df, 
+            test_size=SAMPLE_SIZE, 
+            stratify=df['Category'], 
+            random_state=42
+        )
+    except Exception as e:
+        print(f"Sampling failed or sklearn missing: {e}. Fallback to random sample.")
+        df_sample = df.sample(n=min(SAMPLE_SIZE, len(df)), random_state=42)
 
     print(f"Sampled records: {len(df_sample)}")
     print("Sample distribution:")
