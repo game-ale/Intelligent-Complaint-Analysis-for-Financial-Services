@@ -24,7 +24,7 @@ rag-complaint-chatbot/
 ## Progress
 - [x] **Task 1: EDA & Preprocessing**: Data filtered and cleaned. See [Interim Report](reports/interim_report.md).
 - [x] **Task 2: Vector Store**: Chunking and Indexing.
-- [ ] **Task 3: RAG Core**: Retrieval and Generation logic.
+- [x] **Task 3: RAG Core**: Retrieval and Generation logic. See [Evaluation Report](reports/rag_evaluation.md).
 - [ ] **Task 4: UI**: Gradio application.
 
 ## Setup
