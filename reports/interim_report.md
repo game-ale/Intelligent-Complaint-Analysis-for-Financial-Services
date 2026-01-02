@@ -20,5 +20,21 @@ The goal was to filter the massive CFPB complaint dataset to focus on 4 key fina
     -   Average complaint length is ~196 words.
     -   The distribution is right-skewed, with some complaints exceeding 6000 words. This confirms the need for **chunking** in Task 2 to fit within the embedding model's context window.
 
+## Task 2: Text Chunking, Embedding, and Vector Store Indexing
+
+### Chunking and Embedding Strategy
+-   **Sampling**: A stratified sample of **10,000 complaints** was created to ensure balanced representation across the 4 categories relative to their original distribution.
+-   **Chunking**: Used `RecursiveCharacterTextSplitter` with:
+    -   `chunk_size`: 500 characters
+    -   `chunk_overlap`: 50 characters
+    -   This size balances context preservation with the retrieval of focused segments.
+-   **Embedding Model**: `sentence-transformers/all-MiniLM-L6-v2`.
+    -   Selected for its speed and efficient performance (384 dimensions) suitable for local CPU execution.
+-   **Vector Store**: **ChromaDB** was used to persist the embeddings locally.
+
+### Key Results
+-   Successfully indexed ~10,000 documents (yielding ~20k-40k chunks depending on length).
+-   **Verification**: A test query "credit card late fee" successfully retrieved relevant complaint narratives from the vector store, confirming the pipeline's functionality.
+
 ### Next Steps
--   Proceed to Task 2: Stratified sampling (10k) and Vector Store creation.
+-   Proceed to Task 3: Building the RAG Pipeline (Retriever + Generator).
